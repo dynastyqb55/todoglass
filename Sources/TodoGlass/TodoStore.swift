@@ -32,6 +32,21 @@ final class TodoStore: ObservableObject {
         save()
     }
 
+    /// Live-reorder while dragging: moves `dragging` to the slot occupied by `target`.
+    /// Does not persist — call `commit()` once the drop finishes.
+    func reorder(dragging: TodoItem, target: TodoItem) {
+        guard let from = items.firstIndex(where: { $0.id == dragging.id }),
+              let to = items.firstIndex(where: { $0.id == target.id }),
+              from != to else { return }
+        let moved = items.remove(at: from)
+        items.insert(moved, at: to)
+    }
+
+    /// Persist the current ordering to disk (e.g. after a drag-and-drop reorder).
+    func commit() {
+        save()
+    }
+
     private func load() {
         guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
         do {

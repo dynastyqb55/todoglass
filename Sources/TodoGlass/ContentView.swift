@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var store = TodoStore()
     @State private var newTaskText: String = ""
+    @State private var draggingItem: TodoItem?
     @FocusState private var isInputFocused: Bool
 
     static let defaultWidth: CGFloat = 300
@@ -42,6 +43,8 @@ struct ContentView: View {
         .padding(.horizontal, 14)
         .padding(.top, 10)
         .padding(.bottom, 7)
+        .contentShape(Rectangle())
+        .background(WindowDragArea())
     }
 
     private var taskList: some View {
@@ -59,6 +62,19 @@ struct ContentView: View {
                                     store.remove(item)
                                 }
                             }
+                        )
+                        .opacity(draggingItem?.id == item.id ? 0.4 : 1)
+                        .onDrag {
+                            draggingItem = item
+                            return NSItemProvider(object: item.id.uuidString as NSString)
+                        }
+                        .onDrop(
+                            of: [.text],
+                            delegate: TaskDropDelegate(
+                                item: item,
+                                store: store,
+                                draggingItem: $draggingItem
+                            )
                         )
                     }
                 }
@@ -113,5 +129,30 @@ struct ContentView: View {
         store.add(newTaskText)
         newTaskText = ""
         isInputFocused = true
+    }
+}
+
+/// Handles drag-and-drop reordering: rows shift live as the dragged item passes
+/// over them, and the new order is persisted once the drop completes.
+private struct TaskDropDelegate: DropDelegate {
+    let item: TodoItem
+    let store: TodoStore
+    @Binding var draggingItem: TodoItem?
+
+    func dropEntered(info: DropInfo) {
+        guard let dragging = draggingItem, dragging.id != item.id else { return }
+        withAnimation(.easeInOut(duration: 0.15)) {
+            store.reorder(dragging: dragging, target: item)
+        }
+    }
+
+    func dropUpdated(info: DropInfo) -> DropProposal? {
+        DropProposal(operation: .move)
+    }
+
+    func performDrop(info: DropInfo) -> Bool {
+        draggingItem = nil
+        store.commit()
+        return true
     }
 }
