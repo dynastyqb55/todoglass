@@ -20,18 +20,25 @@ struct TaskRow: View {
                 .font(.system(size: 12))
                 .foregroundColor(item.isDone ? .white.opacity(0.35) : .white.opacity(0.85))
                 .strikethrough(item.isDone, color: .white.opacity(0.35))
-                .lineLimit(2)
+                .lineLimit(isHovering ? nil : 2)
                 .truncationMode(.tail)
 
             Spacer(minLength: 4)
 
             if isHovering {
-                Button(action: onDelete) {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.45))
+                HStack(spacing: 5) {
+                    Button(action: onDelete) {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.45))
+                    }
+                    .buttonStyle(.plain)
+
+                    Image(systemName: "line.3.horizontal")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.35))
+                        .help("Drag to reorder")
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 8)
