@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var store = TodoStore()
+    @StateObject private var autoScroller = AutoScroller()
     @State private var newTaskText: String = ""
     @State private var draggingItem: TodoItem?
     @FocusState private var isInputFocused: Bool
@@ -66,6 +67,14 @@ struct ContentView: View {
                         .opacity(draggingItem?.id == item.id ? 0.4 : 1)
                         .onDrag {
                             draggingItem = item
+                            autoScroller.begin {
+                                // Runs on mouse-up wherever the drop lands, so the
+                                // dragged row never stays stuck in its dimmed state.
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    draggingItem = nil
+                                }
+                                store.commit()
+                            }
                             return NSItemProvider(object: item.id.uuidString as NSString)
                         }
                         .onDrop(
@@ -81,6 +90,7 @@ struct ContentView: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 3)
+            .background(ScrollViewFinder { autoScroller.scrollView = $0 })
         }
     }
 
@@ -151,8 +161,8 @@ private struct TaskDropDelegate: DropDelegate {
     }
 
     func performDrop(info: DropInfo) -> Bool {
-        draggingItem = nil
-        store.commit()
+        // Drag-end cleanup (clearing `draggingItem`, committing) is handled
+        // uniformly by AutoScroller on mouse-up, so nothing to do here.
         return true
     }
 }
